@@ -1,0 +1,8 @@
+{
+  "dev": {},
+  "rinkeby": {
+    "Floppy": "0x3ad9e06a48f559087D1606487a0843d6FA0B2E1B",
+    "Vault": "0x17A526c99Af37A6B7AfF3548ec312424E242E901"
+  },
+  "main": {}
+}
