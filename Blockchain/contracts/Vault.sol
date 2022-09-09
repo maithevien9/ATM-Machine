@@ -6,12 +6,33 @@ import "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import "openzeppelin-solidity/contracts/access/Ownable.sol";
 import "openzeppelin-solidity/contracts/access/AccessControlEnumerable.sol";
 
+// import "openzeppelin-solidity/contracts/security/Pausable.sol";
+
 contract Vault is Ownable, AccessControlEnumerable {
     //
     IERC20 private token;
     uint256 public maxWithdrawAmount;
     bool public withdrawEnable;
     bytes32 public constant WITHDRAWER_ROLE = keccak256("WITHDRAWER_ROLE");
+    bool private _paused;
+
+    event Paused(address account);
+
+    event Unpaused(address account);
+
+    function paused() public view virtual returns (bool) {
+        return _paused;
+    }
+
+    function _pause() internal virtual whenNotPaused {
+        _paused = true;
+        emit Paused(_msgSender());
+    }
+
+    function _unpause() internal virtual whenPaused {
+        _paused = false;
+        emit Unpaused(_msgSender());
+    }
 
     function setWithdrawEnable(bool _isEnable) public onlyOwner {
         withdrawEnable = _isEnable;
@@ -27,9 +48,14 @@ contract Vault is Ownable, AccessControlEnumerable {
 
     constructor() {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+        _paused = false;
     }
 
-    function withdraw(uint256 _amount, address _to) external onlyWithDrawer {
+    function withdraw(uint256 _amount, address _to)
+        external
+        onlyWithDrawer
+        whenNotPaused
+    {
         require(withdrawEnable, "Withdraw is not avaiable");
         require(_amount <= maxWithdrawAmount, "Exceed maximun amount");
         token.transfer(_to, _amount);
@@ -48,6 +74,16 @@ contract Vault is Ownable, AccessControlEnumerable {
             owner() == _msgSender() || hasRole(WITHDRAWER_ROLE, _msgSender()),
             "Caller is not a withdrawer"
         );
+        _;
+    }
+
+    modifier whenNotPaused() {
+        require(!paused(), "Pausable: paused");
+        _;
+    }
+
+    modifier whenPaused() {
+        require(paused(), "Pausable: not paused");
         _;
     }
 }
